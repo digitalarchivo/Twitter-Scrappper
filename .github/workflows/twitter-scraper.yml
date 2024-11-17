@@ -1,0 +1,53 @@
+name: Twitter Scraper
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Runs every 6 hours
+  workflow_dispatch:        # Allows manual trigger
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    
+    - name: Install Chrome
+      run: |
+        wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/sources.list.d/google.list'
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
+    
+    - name: Install ChromeDriver
+      run: |
+        CHROME_VERSION=$(google-chrome --version | cut -d " " -f3 | cut -d "." -f1)
+        CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")
+        curl -L -o chromedriver.zip "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip"
+        unzip chromedriver.zip
+        chmod +x chromedriver
+        sudo mv chromedriver /usr/bin/
+    
+    - name: Install dependencies
+      run: |
+        pip install selenium requests
+    
+    - name: Run scraper
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TWITTER_EMAIL: ${{ secrets.TWITTER_EMAIL }}
+        TWITTER_PASSWORD: ${{ secrets.TWITTER_PASSWORD }}
+      run: python x.py
+    
+    - name: Commit changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add usernames.txt
+        git commit -m "Update usernames list" || echo "No changes to commit"
+        git push
