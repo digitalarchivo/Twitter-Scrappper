@@ -42,10 +42,10 @@ jobs:
         TWITTER_PASSWORD: ${{ secrets.TWITTER_PASSWORD }}
       run: python x.py
     
-    - name: Commit changes
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add usernames.txt
-        git commit -m "Update usernames list" || echo "No changes to commit"
-        git push
+    # - name: Commit changes
+    #   run: |
+    #     git config --local user.email "action@github.com"
+    #     git config --local user.name "GitHub Action"
+    #     git add usernames.txt
+    #     git commit -m "Update usernames list" || echo "No changes to commit"
+    #     git push
