@@ -33,7 +33,7 @@ jobs:
     
     - name: Install dependencies
       run: |
-        pip install selenium requests
+        pip install -r requirements.txt
     
     - name: Run scraper
       env:
