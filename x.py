@@ -42,7 +42,7 @@ def get_verification_code_from_gmail(gmail_email, gmail_password):
         mail.select("inbox")
         
         # Search for recent emails from Twitter (last 2 minutes)
-        _, messages = mail.search(None, '(FROM "info@twitter.com" SUBJECT "code" UNSEEN)')
+        _, messages = mail.search(None, '(FROM "info@x.com" SUBJECT "code" UNSEEN)')
         email_ids = messages[0].split()
         
         if not email_ids:
@@ -53,7 +53,6 @@ def get_verification_code_from_gmail(gmail_email, gmail_password):
         _, msg_data = mail.fetch(latest_email_id, "(RFC822)")
         email_body = msg_data[0][1]
         message = email.message_from_bytes(email_body)
-        
         # Extract verification code
         code = None
         if message.is_multipart():
@@ -204,10 +203,10 @@ def get_following_list(target_username, your_email, your_password, gmail_passwor
         )
 
         chrome_options = Options()
-        chrome_options.add_argument("--headless")
+        # chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-gpu")
+        # chrome_options.add_argument("--disable-gpu")
 
         service = Service("/usr/bin/chromedriver")
         driver = webdriver.Chrome(service=service, options=chrome_options)
