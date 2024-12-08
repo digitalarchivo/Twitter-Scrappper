@@ -29,7 +29,7 @@ jobs:
         wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
         sudo dpkg -i google-chrome-stable_current_amd64.deb
         sudo apt-get install -f
-        sudo apt-get install chromium-chromedriver* 
+        sudo apt-get install chromium-chromedriver
     
     - name: Install dependencies
       run: |
@@ -37,9 +37,12 @@ jobs:
     
     - name: Run scraper
       env:
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        TWITTER_EMAIL: ${{ secrets.TWITTER_EMAIL }}
-        TWITTER_PASSWORD: ${{ secrets.TWITTER_PASSWORD }}
+        TELEGRAM_BOT_TOKEN: "7496191174:AAHEvWNlToVLEPkKLAjfWkjsmiTI0igEhnM"
+        TELEGRAM_CHANNEL_ID: "@alfabootie"
+        TWITTER_EMAIL: "kkittyy864@gmail.com"
+        TWITTER_PASSWORD: "Salam123456789?"
+        GMAIL_PASSWORD: "cnfu mejh jxbv zopu"
+        TARGET_USERNAME: "arashselective"
       run: python x.py
     
     # - name: Commit changes
