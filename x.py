@@ -41,8 +41,8 @@ def get_verification_code_from_gmail(gmail_email, gmail_password):
         mail.login(gmail_email, gmail_password)
         mail.select("inbox")
         
-        # Search for recent emails from Twitter (last 2 minutes)
-        _, messages = mail.search(None, '(FROM "info@x.com" SUBJECT "code" UNSEEN)')
+        # Search for recent emails from Twitter/X
+        _, messages = mail.search(None, '(FROM "info@x.com" UNSEEN)')
         email_ids = messages[0].split()
         
         if not email_ids:
@@ -53,21 +53,23 @@ def get_verification_code_from_gmail(gmail_email, gmail_password):
         _, msg_data = mail.fetch(latest_email_id, "(RFC822)")
         email_body = msg_data[0][1]
         message = email.message_from_bytes(email_body)
-        # Extract verification code
+        
+        # Extract verification code - looking for 8 character alphanumeric code
         code = None
         if message.is_multipart():
             for part in message.walk():
                 if part.get_content_type() == "text/plain":
                     body = part.get_payload(decode=True).decode()
-                    match = re.search(r'\b\d{6}\b', body)
+                    # Look for an 8-character code that appears alone on a line
+                    match = re.search(r'^([a-z0-9]{8})\s*$', body, re.MULTILINE)
                     if match:
-                        code = match.group(0)
+                        code = match.group(1)
                         break
         else:
             body = message.get_payload(decode=True).decode()
-            match = re.search(r'\b\d{6}\b', body)
+            match = re.search(r'^([a-z0-9]{8})\s*$', body, re.MULTILINE)
             if match:
-                code = match.group(0)
+                code = match.group(1)
         
         mail.logout()
         return code
@@ -203,10 +205,10 @@ def get_following_list(target_username, your_email, your_password, gmail_passwor
         )
 
         chrome_options = Options()
-        # chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
-        # chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--disable-gpu")
 
         service = Service("/usr/bin/chromedriver")
         driver = webdriver.Chrome(service=service, options=chrome_options)
