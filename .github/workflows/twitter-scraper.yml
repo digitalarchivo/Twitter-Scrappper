@@ -45,10 +45,10 @@ jobs:
         TARGET_USERNAME: "arashselective"
       run: python x.py
     
-    # - name: Commit changes
-    #   run: |
-    #     git config --local user.email "action@github.com"
-    #     git config --local user.name "GitHub Action"
-    #     git add usernames.txt
-    #     git commit -m "Update usernames list" || echo "No changes to commit"
-    #     git push
+    - name: Commit changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add *_following.txt
+        git commit -m "Update following list for target accounts" || echo "No changes to commit"
+        git push
