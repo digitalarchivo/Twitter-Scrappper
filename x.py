@@ -204,14 +204,21 @@ def get_following_list(target_username, your_email, your_password, gmail_passwor
             f"🤖 Starting to check @{target_username}'s following list\nExisting usernames: {len(existing_usernames)}"
         )
 
+        # Modified Chrome options
         chrome_options = Options()
-        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--headless=new")  # Using new headless mode
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--start-maximized")
+        chrome_options.add_argument("--window-size=1920,1080")  # Set specific window size
+        chrome_options.add_argument("--force-device-scale-factor=1")
 
         service = Service("/usr/bin/chromedriver")
         driver = webdriver.Chrome(service=service, options=chrome_options)
+        
+        # Set window size programmatically as well
+        driver.set_window_size(1920, 1080)
 
         if not login_to_twitter(driver, your_email, your_password, gmail_password):
             send_telegram_message("❌ Failed to login to Twitter")
@@ -355,7 +362,7 @@ def stable_find_element(driver, by, value):
 
 
 if __name__ == "__main__":
-    target_username = "arashselective"
+    target_username = "miiirshah"
     your_email = "kkittyy864@gmail.com"
     your_password = "Salam123456789?"
     gmail_password = "cnfu mejh jxbv zopu"  # Add your Gmail app password here
