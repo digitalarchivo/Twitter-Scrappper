@@ -11,11 +11,16 @@ from retrying import retry
 import imaplib
 import email
 import re
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Telegram Configuration
-TELEGRAM_BOT_TOKEN = "7496191174:AAHEvWNlToVLEPkKLAjfWkjsmiTI0igEhnM"
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 # TELEGRAM_CHANNEL_ID = '-1002466361480'  # Should start with @ for public channels
-TELEGRAM_CHANNEL_ID = "@alfabootie"
+TELEGRAM_CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID")
 
 
 def send_telegram_message(message):
@@ -36,24 +41,24 @@ def get_verification_code_from_gmail(gmail_email, gmail_password):
     try:
         # Connect to Gmail
         mail = imaplib.IMAP4_SSL("imap.gmail.com")
-        
+
         # Login to Gmail
         mail.login(gmail_email, gmail_password)
         mail.select("inbox")
-        
+
         # Search for recent emails from Twitter/X
         _, messages = mail.search(None, '(FROM "info@x.com" UNSEEN)')
         email_ids = messages[0].split()
-        
+
         if not email_ids:
             return None
-            
+
         # Get the latest email
         latest_email_id = email_ids[-1]
         _, msg_data = mail.fetch(latest_email_id, "(RFC822)")
         email_body = msg_data[0][1]
         message = email.message_from_bytes(email_body)
-        
+
         # Extract verification code - looking for 8 character alphanumeric code
         code = None
         if message.is_multipart():
@@ -61,19 +66,19 @@ def get_verification_code_from_gmail(gmail_email, gmail_password):
                 if part.get_content_type() == "text/plain":
                     body = part.get_payload(decode=True).decode()
                     # Look for an 8-character code that appears alone on a line
-                    match = re.search(r'^([a-z0-9]{8})\s*$', body, re.MULTILINE)
+                    match = re.search(r"^([a-z0-9]{8})\s*$", body, re.MULTILINE)
                     if match:
                         code = match.group(1)
                         break
         else:
             body = message.get_payload(decode=True).decode()
-            match = re.search(r'^([a-z0-9]{8})\s*$', body, re.MULTILINE)
+            match = re.search(r"^([a-z0-9]{8})\s*$", body, re.MULTILINE)
             if match:
                 code = match.group(1)
-        
+
         mail.logout()
         return code
-        
+
     except Exception as e:
         print(f"Error getting verification code: {e}")
         send_telegram_message(f"❌ Error getting verification code: {e}")
@@ -102,14 +107,20 @@ def login_to_twitter(driver, your_email, your_password, gmail_password):
                 verify_email.send_keys(your_email)
                 driver.find_element(By.XPATH, "//span[text()='Next']").click()
                 time.sleep(3)
-                
+
                 # Check for verification code input
-                code_input = driver.find_element(By.XPATH, "//input[@data-testid='ocfEnterTextTextInput']")
+                code_input = driver.find_element(
+                    By.XPATH, "//input[@data-testid='ocfEnterTextTextInput']"
+                )
                 if code_input:
-                    verification_code = get_verification_code_from_gmail(your_email, gmail_password)
+                    verification_code = get_verification_code_from_gmail(
+                        your_email, gmail_password
+                    )
                     if verification_code:
                         print(f"Email verification code found: {verification_code}")
-                        send_telegram_message(f"📧 Email verification code found: {verification_code}")
+                        send_telegram_message(
+                            f"📧 Email verification code found: {verification_code}"
+                        )
                         code_input.send_keys(verification_code)
                         driver.find_element(By.XPATH, "//span[text()='Next']").click()
                         time.sleep(3)
@@ -140,25 +151,33 @@ def login_to_twitter(driver, your_email, your_password, gmail_password):
 
         # Step 5: Handle post-login verification code if needed
         try:
-            verification_input = driver.find_element(By.XPATH, "//input[@data-testid='ocfEnterTextTextInput']")
+            verification_input = driver.find_element(
+                By.XPATH, "//input[@data-testid='ocfEnterTextTextInput']"
+            )
             if verification_input:
                 print("Post-login verification code required")
                 send_telegram_message("🔐 Post-login verification code required")
-                
+
                 max_attempts = 5
                 verification_code = None
-                
+
                 for attempt in range(max_attempts):
-                    verification_code = get_verification_code_from_gmail(your_email, gmail_password)
+                    verification_code = get_verification_code_from_gmail(
+                        your_email, gmail_password
+                    )
                     if verification_code:
                         break
                     print(f"Attempt {attempt + 1}: Waiting for verification code...")
-                    send_telegram_message(f"⏳ Attempt {attempt + 1}: Waiting for verification code...")
+                    send_telegram_message(
+                        f"⏳ Attempt {attempt + 1}: Waiting for verification code..."
+                    )
                     time.sleep(10)
-                
+
                 if verification_code:
                     print(f"Post-login verification code found: {verification_code}")
-                    send_telegram_message(f"🔑 Post-login verification code found: {verification_code}")
+                    send_telegram_message(
+                        f"🔑 Post-login verification code found: {verification_code}"
+                    )
                     verification_input.send_keys(verification_code)
                     driver.find_element(By.XPATH, "//span[text()='Next']").click()
                     time.sleep(5)
@@ -197,7 +216,9 @@ def get_following_list(target_username, your_email, your_password, gmail_passwor
     driver = None
     try:
         existing_usernames = read_existing_usernames(target_username)
-        print(f"Found {len(existing_usernames)} existing usernames in {target_username}_following.txt")
+        print(
+            f"Found {len(existing_usernames)} existing usernames in {target_username}_following.txt"
+        )
 
         # Send initial status to Telegram
         send_telegram_message(
@@ -211,12 +232,14 @@ def get_following_list(target_username, your_email, your_password, gmail_passwor
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--start-maximized")
-        chrome_options.add_argument("--window-size=1920,1080")  # Set specific window size
+        chrome_options.add_argument(
+            "--window-size=1920,1080"
+        )  # Set specific window size
         chrome_options.add_argument("--force-device-scale-factor=1")
 
         service = Service("/usr/bin/chromedriver")
         driver = webdriver.Chrome(service=service, options=chrome_options)
-        
+
         # Set window size programmatically as well
         driver.set_window_size(1920, 1080)
 
@@ -286,17 +309,17 @@ def get_following_list(target_username, your_email, your_password, gmail_passwor
         # Send summary to Telegram
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         summary_message = f"""
-📊 Following Check Summary for @{target_username}
-🕒 Time: {timestamp}
-👥 Total accounts found: {len(following_accounts)}
-"""
+            📊 Following Check Summary for @{target_username}
+            🕒 Time: {timestamp}
+            👥 Total accounts found: {len(following_accounts)}
+        """
         send_telegram_message(summary_message)
 
         # If there are new usernames, send them to Telegram
         if new_usernames:
             new_usernames_message = f"""
-🆕 New Accounts Found ({len(new_usernames)}):
-"""
+                🆕 New Accounts Found ({len(new_usernames)}):
+            """
             for i, account in enumerate(sorted(new_usernames), 1):
                 new_usernames_message += f"{i}. {account}\n"
 
@@ -313,7 +336,6 @@ def get_following_list(target_username, your_email, your_password, gmail_passwor
 
             # Update the file with new usernames using target username
             write_new_usernames(target_username, new_usernames)
-            send_telegram_message(f"✅ New usernames have been added to {target_username}_following.txt")
         else:
             send_telegram_message("ℹ️ No new accounts found")
 
@@ -362,9 +384,9 @@ def stable_find_element(driver, by, value):
 
 
 if __name__ == "__main__":
-    target_username = "miiirshah"
-    your_email = "kkittyy864@gmail.com"
-    your_password = "Salam123456789?"
-    gmail_password = "cnfu mejh jxbv zopu"  # Add your Gmail app password here
+    target_username = os.getenv("TARGET_USERNAME")
+    your_email = os.getenv("TWITTER_EMAIL")
+    your_password = os.getenv("TWITTER_PASSWORD")
+    gmail_password = os.getenv("GMAIL_APP_PASSWORD")
 
     get_following_list(target_username, your_email, your_password, gmail_password)
