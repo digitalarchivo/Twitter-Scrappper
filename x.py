@@ -134,7 +134,7 @@ def login_to_twitter(driver, your_email, your_password, gmail_password):
             )
             if verify_username:
                 print("Username verification required")
-                send_telegram_message("👤 Username verification required")
+                # send_telegram_message("👤 Username verification required")
                 verify_username.send_keys("kkittyy864")
                 driver.find_element(By.XPATH, "//span[text()='Next']").click()
                 time.sleep(3)
@@ -156,7 +156,6 @@ def login_to_twitter(driver, your_email, your_password, gmail_password):
             )
             if verification_input:
                 print("Post-login verification code required")
-                send_telegram_message("🔐 Post-login verification code required")
 
                 max_attempts = 5
                 verification_code = None
@@ -175,9 +174,6 @@ def login_to_twitter(driver, your_email, your_password, gmail_password):
 
                 if verification_code:
                     print(f"Post-login verification code found: {verification_code}")
-                    send_telegram_message(
-                        f"🔑 Post-login verification code found: {verification_code}"
-                    )
                     verification_input.send_keys(verification_code)
                     driver.find_element(By.XPATH, "//span[text()='Next']").click()
                     time.sleep(5)
