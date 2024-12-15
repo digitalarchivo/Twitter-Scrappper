@@ -42,7 +42,7 @@ jobs:
         TWITTER_EMAIL: ${{ secrets.TWITTER_EMAIL }}
         TWITTER_PASSWORD: ${{ secrets.TWITTER_PASSWORD }}
         GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-        TARGET_USERNAME: ${{ secrets.TARGET_USERNAME }}
+        TARGET_USERNAMES: ${{ secrets.TARGET_USERNAMES }}
       run: python x.py
     
     - name: Commit changes

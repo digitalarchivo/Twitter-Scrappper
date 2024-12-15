@@ -383,10 +383,25 @@ def stable_find_element(driver, by, value):
     return driver.find_element(by, value)
 
 
-if __name__ == "__main__":
-    target_username = os.getenv("TARGET_USERNAME")
+def main():
+    target_usernames = os.getenv("TARGET_USERNAMES", "").split(",")  # Comma-separated usernames
     your_email = os.getenv("TWITTER_EMAIL")
     your_password = os.getenv("TWITTER_PASSWORD")
     gmail_password = os.getenv("GMAIL_APP_PASSWORD")
 
-    get_following_list(target_username, your_email, your_password, gmail_password)
+    if not target_usernames or target_usernames == [""]:
+        print("❌ No usernames provided. Please set the TARGET_USERNAMES environment variable.")
+        return
+
+    for target_username in target_usernames:
+        target_username = target_username.strip()
+        if target_username:
+            print(f"🔍 Processing @{target_username}")
+            try:
+                get_following_list(target_username, your_email, your_password, gmail_password)
+            except Exception as e:
+                print(f"❌ Error processing @{target_username}: {str(e)}")
+                send_telegram_message(f"❌ Error processing @{target_username}: {str(e)}")
+
+if __name__ == "__main__":
+    main()
