@@ -55,3 +55,5 @@
 @BasedZog
 @Jon_Metavest
 @opmentis_ai
+@beepysays
+@Tardionmoon
