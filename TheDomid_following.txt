@@ -81,3 +81,5 @@
 @AbstractCatsNFT
 @qrimeCapital
 @ReiNetwork0x
+@coffeexcoin
+@degenspartanai
