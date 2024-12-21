@@ -108,3 +108,6 @@
 @wavey0x
 @CoinbaseInsto
 @FractionAI_xyz
+@LinearProtocol
+@AerodromeFi
+@TeigenLila
