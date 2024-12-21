@@ -61,3 +61,4 @@
 @zentry
 @KingAce_Crypto
 @Use_Terra
+@CryptoKans
