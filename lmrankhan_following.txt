@@ -71,3 +71,5 @@
 @BasementRon
 @Send
 @0xMagmar
+@StepSisAI
+@cosmos
