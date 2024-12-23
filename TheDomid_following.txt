@@ -114,3 +114,4 @@
 @MaxMartelo
 @OnlyOneSami
 @emilyxlai
+@eigenlayer
