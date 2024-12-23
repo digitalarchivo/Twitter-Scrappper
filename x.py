@@ -203,7 +203,9 @@ def read_existing_usernames(target_username):
 
 def write_new_usernames(target_username, usernames):
     filename = f"{target_username}_following.txt"
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(filename, "a") as f:
+        f.write(f"\n=== {timestamp} ===\n")
         for username in usernames:
             f.write(f"{username}\n")
 
