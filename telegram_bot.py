@@ -1,5 +1,5 @@
 """
-Copyright (c) 2024. All rights reserved.
+Copyright (c) 2025. All rights reserved.
 
 This code is licensed under a Custom License:
 - You may use, copy, and modify this code for personal and non-commercial purposes.

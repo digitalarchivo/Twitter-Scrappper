@@ -1,3 +1,13 @@
+"""
+Copyright (c) 2025. All rights reserved.
+
+This code is licensed under a Custom License:
+- You may use, copy, and modify this code for personal and non-commercial purposes.
+- Commercial use, sale, or any financial exploitation of this code is strictly prohibited.
+- All modifications must maintain this license header.
+- No warranty is provided, and the author is not liable for any damages.
+"""
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -19,7 +29,6 @@ load_dotenv()
 
 # Telegram Configuration
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-# TELEGRAM_CHANNEL_ID = '-1002466361480'  # Should start with @ for public channels
 TELEGRAM_CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID")
 
 
