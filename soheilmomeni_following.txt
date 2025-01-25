@@ -161,3 +161,7 @@ JAMES @ ANIMOCA VENTURES
 
 === 2025-01-24 18:23:49 ===
 @0xSjdkian
+
+=== 2025-01-25 01:03:41 ===
+@ConcreteXYZ
+@0xRickyW
