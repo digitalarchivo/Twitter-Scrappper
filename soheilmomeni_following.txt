@@ -182,3 +182,7 @@ JAMES @ ANIMOCA VENTURES
 
 === 2025-01-26 18:22:30 ===
 @0xvidhi
+
+=== 2025-01-27 01:07:29 ===
+@0x_ps
+@tryfomo
