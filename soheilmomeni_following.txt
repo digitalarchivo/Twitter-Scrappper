@@ -242,3 +242,6 @@ JAMES @ ANIMOCA VENTURES
 
 === 2025-01-30 12:29:57 ===
 @Magentalabs_io
+
+=== 2025-01-31 12:30:02 ===
+@cot_research
