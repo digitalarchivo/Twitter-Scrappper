@@ -778,3 +778,7 @@ KITE AI @ EthDenver
 === 2025-03-11 18:28:00 ===
 @ManusAI_HQ
 @factcheckdotfun
+
+=== 2025-03-13 01:13:18 ===
+@DarioAmodei
+@factcheckAIbot
