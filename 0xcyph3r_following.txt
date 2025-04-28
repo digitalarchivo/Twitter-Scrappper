@@ -1061,3 +1061,6 @@ KITE AI @ EthDenver
 @BuildOnJulia
 @markoinny
 @CryptoInfluence
+
+=== 2025-04-28 01:17:43 ===
+@Scallop_io
