@@ -17,19 +17,11 @@ jobs:
       with:
         python-version: '3.x'
 
-    - name: Install stable Chrome 121
+    - name: Install Chromium + Chromedriver
       run: |
-        CHROME_DEB="google-chrome-stable_121.0.6167.85-1_amd64.deb"
-        wget https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/$CHROME_DEB
-        sudo apt install -y ./$CHROME_DEB
-
-    - name: Install matching Chromedriver
-      run: |
-        VERSION="121.0.6167.85"
-        wget https://chromedriver.storage.googleapis.com/${VERSION}/chromedriver_linux64.zip
-        unzip chromedriver_linux64.zip
-        sudo mv chromedriver /usr/local/bin/chromedriver
-        chmod +x /usr/local/bin/chromedriver
+        sudo apt-get update
+        sudo apt-get install -y chromium-browser chromium-chromedriver
+        sudo ln -s /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
 
     - name: Install dependencies
       run: pip install -r requirements.txt
@@ -39,7 +31,8 @@ jobs:
         TWITTER_EMAIL: ${{ secrets.TWITTER_EMAIL }}
         TWITTER_PASSWORD: ${{ secrets.TWITTER_PASSWORD }}
         TARGET_USERNAMES: ${{ secrets.TARGET_USERNAMES }}
-      run: python x.py
+      run: |
+        python x.py
 
     - name: Commit results
       run: |
