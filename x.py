@@ -1,102 +1,95 @@
 import os
 import time
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
 
-def login_to_twitter(driver, your_email, your_password):
+# Load usernames from environment
+usernames = os.getenv("TARGET_USERNAMES")
+if not usernames:
+    print("❌ No usernames provided. Please set the TARGET_USERNAMES environment variable.")
+    exit(1)
+
+usernames = [u.strip().lstrip('@') for u in usernames.split(',') if u.strip()]
+
+# Twitter login credentials (set these securely in GitHub Secrets)
+TWITTER_EMAIL = os.getenv("TWITTER_EMAIL")
+TWITTER_PASSWORD = os.getenv("TWITTER_PASSWORD")
+
+if not TWITTER_EMAIL or not TWITTER_PASSWORD:
+    print("❌ Twitter login credentials not found. Please set TWITTER_EMAIL and TWITTER_PASSWORD.")
+    exit(1)
+
+# Setup headless Chrome
+options = Options()
+options.add_argument("--headless=new")
+options.add_argument("--disable-gpu")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--window-size=1920x1080")
+
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+wait = WebDriverWait(driver, 20)
+
+def login_to_twitter():
+    print("🔐 Logging into Twitter...")
+    driver.get("https://twitter.com/login")
+
+    wait.until(EC.presence_of_element_located((By.NAME, "text"))).send_keys(TWITTER_EMAIL)
+    driver.find_element(By.XPATH, "//span[text()='Next']").click()
+    time.sleep(2)
+
     try:
-        driver.get("https://twitter.com/i/flow/login")
-        time.sleep(3)
-
-        # Step 1: Enter email/username
-        email_field = driver.find_element(By.XPATH, "//input[@autocomplete='username']")
-        email_field.send_keys(your_email)
-        driver.find_element(By.XPATH, "//span[text()='Next']").click()
-        time.sleep(3)
-
-        # Skip email or username verification steps
-
-        # Step 2: Enter password
-        password_field = driver.find_element(By.XPATH, "//input[@autocomplete='current-password']")
-        password_field.send_keys(your_password)
+        wait.until(EC.presence_of_element_located((By.NAME, "password"))).send_keys(TWITTER_PASSWORD)
         driver.find_element(By.XPATH, "//span[text()='Log in']").click()
-        time.sleep(5)
-
-        # Skip any 2FA code inputs
-
-        return True
+        print("✅ Logged in successfully.")
     except Exception as e:
-        print(f"Login failed: {str(e)}")
-        return False
-
-def get_following_list(target_username, your_email, your_password):
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    driver = webdriver.Chrome(options=chrome_options)
-
-    if not login_to_twitter(driver, your_email, your_password):
-        print("❌ Failed to login to Twitter")
+        print("❌ Login failed.")
         driver.quit()
-        return
+        exit(1)
 
-    print(f"Logged in successfully. Fetching following list for @{target_username}...")
+    time.sleep(5)
 
-    try:
-        driver.get(f"https://twitter.com/{target_username}/following")
-        time.sleep(5)
+def scrape_following(username):
+    print(f"🔍 Processing @{username}")
+    driver.get(f"https://twitter.com/{username}/following")
+    time.sleep(3)
 
-        # Scroll to load enough followers (adjust number of scrolls as needed)
-        scroll_pause_time = 2
-        last_height = driver.execute_script("return document.body.scrollHeight")
-        scrolls = 5
-        for _ in range(scrolls):
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(scroll_pause_time)
-            new_height = driver.execute_script("return document.body.scrollHeight")
-            if new_height == last_height:
-                break
-            last_height = new_height
+    last_height = driver.execute_script("return document.body.scrollHeight")
+    SCROLL_PAUSE = 2
+    scroll_attempts = 0
 
-        # Extract following usernames
-        following_elements = driver.find_elements(By.XPATH, "//div[@data-testid='UserCell']//div[@dir='ltr']/span")
-        following_usernames = set()
-        for elem in following_elements:
-            username_text = elem.text
-            if username_text.startswith("@"):
-                following_usernames.add(username_text[1:])  # strip '@'
+    # Scroll to load all followings
+    while scroll_attempts < 10:
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(SCROLL_PAUSE)
+        new_height = driver.execute_script("return document.body.scrollHeight")
+        if new_height == last_height:
+            scroll_attempts += 1
+        else:
+            scroll_attempts = 0
+        last_height = new_height
 
-        print(f"@{target_username} is following {len(following_usernames)} users:")
-        for u in sorted(following_usernames):
-            print(u)
-    except Exception as e:
-        print(f"❌ Error fetching following list: {str(e)}")
-    finally:
-        driver.quit()
+    # Parse usernames
+    elements = driver.find_elements(By.XPATH, '//div[@data-testid="UserCell"]//div[@dir="ltr"]/span')
+    following_usernames = [el.text for el in elements if el.text.startswith('@')]
 
-def main():
-    target_usernames = os.getenv("TARGET_USERNAMES", "").split(",")
-    your_email = os.getenv("TWITTER_EMAIL")
-    your_password = os.getenv("TWITTER_PASSWORD")
+    output_filename = f"{username}_following.txt"
+    with open(output_filename, "w", encoding="utf-8") as f:
+        for user in following_usernames:
+            f.write(f"{user}\n")
 
-    if not target_usernames or target_usernames == [""]:
-        print("❌ No usernames provided. Please set the TARGET_USERNAMES environment variable.")
-        return
+    print(f"✅ @{username} is following {len(following_usernames)} users. Saved to {output_filename}.")
 
-    if not your_email or not your_password:
-        print("❌ Twitter email or password environment variables not set.")
-        return
+# --- Execution ---
+login_to_twitter()
 
-    for target_username in target_usernames:
-        target_username = target_username.strip()
-        if target_username:
-            print(f"🔍 Processing @{target_username}")
-            try:
-                get_following_list(target_username, your_email, your_password)
-            except Exception as e:
-                print(f"❌ Error processing @{target_username}: {str(e)}")
+for username in usernames:
+    scrape_following(username)
 
-if __name__ == "__main__":
-    main()
+driver.quit()
+print("🏁 Done.")
