@@ -25,17 +25,27 @@ jobs:
       run: |
         pip install selenium
 
-    - name: Install Chrome + Chromedriver
+    - name: Install Chrome for Testing + Chromedriver
       run: |
         sudo apt update
         sudo apt install -y wget unzip
-        wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-        sudo apt install -y ./google-chrome-stable_current_amd64.deb
-        CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+' | head -1)
+
+        # Use a known-good version
+        CHROME_VERSION="122.0.6261.111"
+
+        # Download Chrome for Testing and Chromedriver
+        wget -q "https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/linux64/chrome-linux64.zip"
         wget -q "https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/linux64/chromedriver-linux64.zip"
+
+        unzip chrome-linux64.zip
         unzip chromedriver-linux64.zip
+
+        sudo mv chrome-linux64 /opt/chrome
         sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
-        chmod +x /usr/local/bin/chromedriver
+        sudo chmod +x /usr/local/bin/chromedriver
+
+        # Add Chrome binary to PATH
+        sudo ln -s /opt/chrome/chrome /usr/bin/google-chrome
 
     - name: Run Scraper with Username
       run: python x.py ${{ github.event.inputs.username }}
