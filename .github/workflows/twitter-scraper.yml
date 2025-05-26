@@ -1,49 +1,49 @@
-name: Twitter Scraper
+name: Twitter Following Scraper
 
 on:
-  schedule:
-    - cron: '0 */6 * * *'  # Every 6 hours
   workflow_dispatch:
+    inputs:
+      username:
+        description: 'Twitter username (no @)'
+        required: true
+        default: 'shawmakesmagic'
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repo
+      uses: actions/checkout@v3
 
-    - name: Set up Python 3.x
-      uses: actions/setup-python@v2
+    - name: Setup Python
+      uses: actions/setup-python@v4
       with:
-        python-version: '3.x'
-
-    - name: Install Chromium and Chromedriver
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y chromium-browser chromium-chromedriver
-        sudo rm -f /usr/bin/chromedriver
-        sudo ln -s /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
+        python-version: '3.10'
 
     - name: Install Python dependencies
       run: |
-        pip install -r requirements.txt
+        pip install selenium
 
-    - name: Run scraper
-      env:
-        TWITTER_EMAIL: ${{ secrets.TWITTER_EMAIL }}
-        TWITTER_PASSWORD: ${{ secrets.TWITTER_PASSWORD }}
-        TARGET_USERNAMES: ${{ secrets.TARGET_USERNAMES }}
-      run: python x.py
-
-    - name: Commit changes
+    - name: Install Chrome + Chromedriver
       run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git add *_following.txt
-        git commit -m "Update following list for target accounts" || echo "No changes to commit"
+        sudo apt update
+        sudo apt install -y wget unzip
+        wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo apt install -y ./google-chrome-stable_current_amd64.deb
+        CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+' | head -1)
+        wget -q "https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/linux64/chromedriver-linux64.zip"
+        unzip chromedriver-linux64.zip
+        sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
+        chmod +x /usr/local/bin/chromedriver
 
-    - name: Push changes
-      uses: ad-m/github-push-action@master
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: ${{ github.ref }}
+    - name: Run Scraper with Username
+      run: python x.py ${{ github.event.inputs.username }}
+
+    - name: Commit Results
+      run: |
+        git config --local user.name "github-actions[bot]"
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git add ${{ github.event.inputs.username }}_following.txt
+        git commit -m "Update following list for ${{ github.event.inputs.username }}" || echo "No changes to commit"
+        git push
