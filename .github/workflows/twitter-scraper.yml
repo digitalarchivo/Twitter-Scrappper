@@ -1,86 +1,52 @@
-import sys
-import time
-import shutil
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
+name: Twitter Following Scraper
 
-if len(sys.argv) != 2:
-    print("Usage: python x.py <twitter_username>")
-    sys.exit(1)
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: 'Twitter username (no @)'
+        required: true
+        default: 'shawmakesmagic'
 
-username = sys.argv[1].strip()
-url = f"https://twitter.com/{username}/following"
-output_file = f"{username}_following.txt"
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
 
-options = Options()
-options.add_argument("--headless")
-options.add_argument("--disable-gpu")
-options.add_argument("--no-sandbox")
-options.add_argument("--window-size=1920,1080")
-options.add_argument("--disable-dev-shm-usage")
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
 
-chromedriver_path = shutil.which("chromedriver")
-if chromedriver_path is None:
-    raise RuntimeError("chromedriver binary not found in PATH")
+    - name: Setup Python 3.10
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
 
-driver = webdriver.Chrome(service=Service(chromedriver_path), options=options)
-driver.get(url)
+    - name: Install Python dependencies
+      run: pip install selenium
 
-wait = WebDriverWait(driver, 15)
-try:
-    wait.until(EC.presence_of_element_located((By.XPATH, '//div[@data-testid="UserCell"]')))
-except TimeoutException:
-    print(f"Timed out waiting for UserCell elements on {url}")
-    driver.quit()
-    sys.exit(1)
+    - name: Install Chrome
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y wget unzip
+        wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
 
-# Handle potential popups (like login modal) by clicking close buttons if found
-try:
-    close_btn = driver.find_element(By.XPATH, '//div[@role="button" and contains(@aria-label,"Close")]')
-    close_btn.click()
-    time.sleep(2)
-except:
-    # No popup found; continue
-    pass
+    - name: Install Chromedriver
+      run: |
+        CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+' | head -1)
+        echo "Chrome version: $CHROME_VERSION"
+        wget -q "https://chromedriver.storage.googleapis.com/${CHROME_VERSION}/chromedriver_linux64.zip"
+        unzip chromedriver_linux64.zip
+        sudo mv chromedriver /usr/local/bin/
+        sudo chmod +x /usr/local/bin/chromedriver
 
-# Scroll to load more entries
-last_height = driver.execute_script("return document.body.scrollHeight")
-for _ in range(15):
-    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-    time.sleep(3)
-    new_height = driver.execute_script("return document.body.scrollHeight")
-    if new_height == last_height:
-        break
-    last_height = new_height
+    - name: Run Scraper
+      run: python x.py ${{ github.event.inputs.username }}
 
-# Extract usernames
-elements = driver.find_elements(By.XPATH, '//div[@data-testid="UserCell"]//a[@role="link" and starts-with(@href, "/")]')
-
-seen = set()
-usernames = []
-for el in elements:
-    href = el.get_attribute("href")
-    if not href:
-        continue
-
-    # Extract the path part only (after domain)
-    if "twitter.com" in href:
-        handle = href.split("twitter.com/")[-1].split("?")[0].strip("/")
-        if not handle or handle.lower() == username.lower() or "/" in handle:
-            continue  # skip invalid or self links
-
-        if handle not in seen:
-            usernames.append(handle)
-            seen.add(handle)
-
-with open(output_file, "w", encoding="utf-8") as f:
-    for handle in usernames:
-        f.write(handle + "\n")
-
-print(f"Saved {len(usernames)} usernames to {output_file}")
-driver.quit()
+    - name: Commit Results
+      run: |
+        git config --local user.name "github-actions[bot]"
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git add ${{ github.event.inputs.username }}_following.txt
+        git commit -m "Update following list for ${{ github.event.inputs.username }}" || echo "No changes to commit"
+        git push
