@@ -2,8 +2,8 @@ name: Twitter Scraper
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # every 6 hours
-  workflow_dispatch:        # manual run
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
 
 jobs:
   scrape:
@@ -17,32 +17,31 @@ jobs:
       with:
         python-version: '3.x'
 
-    - name: Install specific version of Google Chrome
+    - name: Install stable Chrome 121
       run: |
-        CHROME_DEB="google-chrome-stable_122.0.6261.111-1_amd64.deb"
+        CHROME_DEB="google-chrome-stable_121.0.6167.85-1_amd64.deb"
         wget https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/$CHROME_DEB
         sudo apt install -y ./$CHROME_DEB
 
-    - name: Install matching ChromeDriver
+    - name: Install matching Chromedriver
       run: |
-        VERSION="122.0.6261.111"
+        VERSION="121.0.6167.85"
         wget https://chromedriver.storage.googleapis.com/${VERSION}/chromedriver_linux64.zip
         unzip chromedriver_linux64.zip
         sudo mv chromedriver /usr/local/bin/chromedriver
         chmod +x /usr/local/bin/chromedriver
 
-    - name: Install Python dependencies
-      run: |
-        pip install -r requirements.txt
+    - name: Install dependencies
+      run: pip install -r requirements.txt
 
-    - name: Run Twitter scraper
+    - name: Run scraper
       env:
         TWITTER_EMAIL: ${{ secrets.TWITTER_EMAIL }}
         TWITTER_PASSWORD: ${{ secrets.TWITTER_PASSWORD }}
         TARGET_USERNAMES: ${{ secrets.TARGET_USERNAMES }}
       run: python x.py
 
-    - name: Commit updates
+    - name: Commit results
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
