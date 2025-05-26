@@ -3,7 +3,7 @@ name: Twitter Scraper
 on:
   schedule:
     - cron: '0 */6 * * *'  # Every 6 hours
-  workflow_dispatch:        # Manual trigger allowed
+  workflow_dispatch:
 
 jobs:
   scrape:
@@ -21,8 +21,8 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y chromium-browser chromium-chromedriver
-        # Force symlink to avoid "file exists" error
-        sudo ln -sf /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
+        sudo rm -f /usr/bin/chromedriver
+        sudo ln -s /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
 
     - name: Install Python dependencies
       run: |
@@ -30,11 +30,8 @@ jobs:
 
     - name: Run scraper
       env:
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
         TWITTER_EMAIL: ${{ secrets.TWITTER_EMAIL }}
         TWITTER_PASSWORD: ${{ secrets.TWITTER_PASSWORD }}
-        GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         TARGET_USERNAMES: ${{ secrets.TARGET_USERNAMES }}
       run: python x.py
 
