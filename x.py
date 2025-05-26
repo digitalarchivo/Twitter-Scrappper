@@ -1,95 +1,56 @@
-import os
+import sys
 import time
+import shutil
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
 
-# Load usernames from environment
-usernames = os.getenv("TARGET_USERNAMES")
-if not usernames:
-    print("❌ No usernames provided. Please set the TARGET_USERNAMES environment variable.")
-    exit(1)
+# -------- Config --------
+if len(sys.argv) != 2:
+    print("Usage: python x.py <twitter_username>")
+    sys.exit(1)
 
-usernames = [u.strip().lstrip('@') for u in usernames.split(',') if u.strip()]
+username = sys.argv[1]  # e.g., shawmakesmagic
+url = f"https://twitter.com/{username}/following"
+output_file = f"{username}_following.txt"
+# ------------------------
 
-# Twitter login credentials (set these securely in GitHub Secrets)
-TWITTER_EMAIL = os.getenv("TWITTER_EMAIL")
-TWITTER_PASSWORD = os.getenv("TWITTER_PASSWORD")
-
-if not TWITTER_EMAIL or not TWITTER_PASSWORD:
-    print("❌ Twitter login credentials not found. Please set TWITTER_EMAIL and TWITTER_PASSWORD.")
-    exit(1)
-
-# Setup headless Chrome
+# Setup Chrome driver with headless options
 options = Options()
-options.add_argument("--headless=new")
+options.add_argument("--headless")
 options.add_argument("--disable-gpu")
 options.add_argument("--no-sandbox")
-options.add_argument("--disable-dev-shm-usage")
-options.add_argument("--window-size=1920x1080")
 
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-wait = WebDriverWait(driver, 20)
+chromedriver_path = shutil.which("chromedriver")
+if chromedriver_path is None:
+    raise RuntimeError("chromedriver binary not found in PATH")
 
-def login_to_twitter():
-    print("🔐 Logging into Twitter...")
-    driver.get("https://twitter.com/login")
+driver = webdriver.Chrome(service=Service(chromedriver_path), options=options)
+driver.get(url)
+time.sleep(5)
 
-    wait.until(EC.presence_of_element_located((By.NAME, "text"))).send_keys(TWITTER_EMAIL)
-    driver.find_element(By.XPATH, "//span[text()='Next']").click()
+# Scroll to load more following entries
+for _ in range(5):
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
     time.sleep(2)
 
-    try:
-        wait.until(EC.presence_of_element_located((By.NAME, "password"))).send_keys(TWITTER_PASSWORD)
-        driver.find_element(By.XPATH, "//span[text()='Log in']").click()
-        print("✅ Logged in successfully.")
-    except Exception as e:
-        print("❌ Login failed.")
-        driver.quit()
-        exit(1)
+elements = driver.find_elements(By.XPATH, '//div[@data-testid="UserCell"]//a[contains(@href,"/")]')
 
-    time.sleep(5)
+seen = set()
+usernames = []
+for el in elements:
+    href = el.getAttribute("href")
+    if href and f"/{username}" not in href:
+        handle = href.strip("/").split("/")[-1]
+        if handle not in seen:
+            usernames.append(handle)
+            seen.add(handle)
 
-def scrape_following(username):
-    print(f"🔍 Processing @{username}")
-    driver.get(f"https://twitter.com/{username}/following")
-    time.sleep(3)
+# Save to dynamic file
+with open(output_file, "w", encoding="utf-8") as f:
+    for handle in usernames:
+        f.write(f"{handle}\n")
 
-    last_height = driver.execute_script("return document.body.scrollHeight")
-    SCROLL_PAUSE = 2
-    scroll_attempts = 0
-
-    # Scroll to load all followings
-    while scroll_attempts < 10:
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(SCROLL_PAUSE)
-        new_height = driver.execute_script("return document.body.scrollHeight")
-        if new_height == last_height:
-            scroll_attempts += 1
-        else:
-            scroll_attempts = 0
-        last_height = new_height
-
-    # Parse usernames
-    elements = driver.find_elements(By.XPATH, '//div[@data-testid="UserCell"]//div[@dir="ltr"]/span')
-    following_usernames = [el.text for el in elements if el.text.startswith('@')]
-
-    output_filename = f"{username}_following.txt"
-    with open(output_filename, "w", encoding="utf-8") as f:
-        for user in following_usernames:
-            f.write(f"{user}\n")
-
-    print(f"✅ @{username} is following {len(following_usernames)} users. Saved to {output_filename}.")
-
-# --- Execution ---
-login_to_twitter()
-
-for username in usernames:
-    scrape_following(username)
-
+print(f"Saved {len(usernames)} usernames to {output_file}")
 driver.quit()
-print("🏁 Done.")
